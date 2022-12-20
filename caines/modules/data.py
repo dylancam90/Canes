@@ -1,20 +1,19 @@
 # DONT FORGET TO CHANGE DAY_LIMIT
 
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import csv, os, sys
 
 
 class Caines:
     load_dotenv()
-
     def __init__(self, file, day_limit=7) -> None:
         self.file = file
         # days before notification is sent, 7 is the default
         self.DAY_LIMIT = day_limit
-        # todays date
-        self.TODAY = datetime.now().date()
+        # todays date (UPDATED TO SUBTRACT 1 DAY)
+        self.TODAY = datetime.now().date() - timedelta(days=1)
         # pd column keys
         self.columns = []
         self.CSV_NAME = "assets/already_emailed.csv"
