@@ -1,4 +1,5 @@
 import smtplib, ssl
+from jinja2 import Template
 from dotenv import load_dotenv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -28,15 +29,11 @@ class Email:
             self.msg.attach(part)
 
 
-    def append_html(self, array):
-        tr = ""
-        for i in array:
-            tr += """<tr style="background-color: #f2f2f2;">
-                        <td style="border: 1px solid #ddd; padding: 8px;">""" + i["name"] + """</td>
-                        <td style="border: 1px solid #ddd; padding: 8px;">""" + i["form"] + """</td>
-                        <td style="border: 1px solid #ddd; padding: 8px;">""" + i["days"] + """</td>
-                    </tr>"""
-        return tr
+    def create_template(self, values):
+        with open("assets/template.html") as f:
+            template = Template(f.read())
+
+        return template.render(values=values)
 
 
     def run(self):
