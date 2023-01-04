@@ -1,4 +1,4 @@
-# DONT FORGET TO CHANGE DAY_LIMIT
+# DONT FORGET TO CHANGE LINE 16
 
 import pandas as pd
 from datetime import datetime, timedelta
@@ -6,17 +6,18 @@ from dotenv import load_dotenv
 import csv, os, sys
 
 
-class Caines:
+class Canes:
     load_dotenv()
     def __init__(self, file, day_limit=7) -> None:
         self.file = file
         # days before notification is sent, 7 is the default
         self.DAY_LIMIT = day_limit
-        # todays date (UPDATED TO SUBTRACT 1 DAY)
-        self.TODAY = datetime.now().date() - timedelta(days=1)
+        # todays date (UPDATED TO SUBTRACT 1 DAY (- timedelta(days=4))
+        self.TODAY = datetime.now().date()
         # pd column keys
         self.columns = []
         self.CSV_NAME = "assets/already_emailed.csv"
+        self.everyday = True
 
     def make_dataframe(self):
         data = pd.read_excel(
@@ -29,8 +30,7 @@ class Caines:
         self.columns = [i for i in df.columns]
         return df
 
-
-    def iterate(self, df):
+    def iterate(self, df, everyday=True):
         # list of people to email
         email_list = []
         # 2 empty columns to add to DF
@@ -59,9 +59,13 @@ class Caines:
         df["Work Permit Days Left"] = work_results
 
 
-        # if no forms are expired, exit
+        # if len = 0 exit else if everyday is set to true check duplicates else return email list
         if self._check_len(email_list):
-            email_list = self._check_duplicate_emails(email_list)
+            if not everyday:
+                email_list = self._check_duplicate_emails(email_list)
+                self.everyday = False
+            else:
+                self.everyday = True    
             return email_list
 
 
@@ -72,26 +76,41 @@ class Caines:
             sys.exit(0)
         return True
 
+
     def _get_days(self, value):
-        null_field = str(value).split(" ")[0]
-        if null_field in ("MISSING", "None", "nan"):
+        # null_field = str(value).split(" ")[0] // may not need this
+        try:   
+            date = str(value.date() - self.TODAY).split(" ")[0]
+        except AttributeError:
             return None
-        else:
-            return str(value.date() - self.TODAY).split(" ")[0]
+        
+        return self._filter_negative_days(date)
+
+
+    # days were going into negatives and if the day falls on exactly the day of expiration it would fail since date = "0:00:00" (still needs testing)
+    def _filter_negative_days(self, date):
+        if date[0] == "-":
+            return None
+        elif date[0] == "0":
+            return 0
+        elif int(date) < 0:
+            return None 
 
 
     def _get_email_list(self, days, name, column_name, email_list):
         buffer = dict()
         try:
             if int(days) < self.DAY_LIMIT:
-                buffer["name"], buffer["form"], buffer["days"] = name, column_name.title(), days
+                if int(days) == 0:
+                    buffer["name"], buffer["form"], buffer["days"] = name, column_name.title(), "TODAY"
+                else:
+                    buffer["name"], buffer["form"], buffer["days"] = name, column_name.title(), days
                 email_list.append(buffer)
         except TypeError:
             pass
 
 
     def _check_duplicate_emails(self, email_list):
-
         already = []
         # load csv into memory
         with open(self.CSV_NAME, "r") as file:
